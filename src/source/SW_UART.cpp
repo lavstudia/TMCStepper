@@ -36,9 +36,9 @@
 #include "SW_UART.h"
 
 
-#define FORCE_BAUD_RATE 19200
+#define FORCE_BAUD_RATE 14400
 #define INTERRUPT_PRIORITY 0
-#define OVERSAMPLE 3
+#define OVERSAMPLE 4
 //
 // Statics
 //
@@ -62,9 +62,9 @@ uint32_t SoftwareSerial::cur_speed = 0;
   void SoftwareSerial::setSpeed(uint32_t speed) {
     if (speed != cur_speed) {
       SWSerial_Timer.pause();
-      SWSerial_Timer.setCount(0);
       if (speed != 0) {
-        SWSerial_Timer.setPeriod(1000000ul/speed/OVERSAMPLE);
+        SWSerial_Timer.setCount(0);
+        SWSerial_Timer.setOverflow(SW_SERIAL_TIMER_RATE / (speed*OVERSAMPLE) - 1);
         SWSerial_Timer.resume();
       }
       cur_speed = speed;
@@ -72,6 +72,7 @@ uint32_t SoftwareSerial::cur_speed = 0;
   }
 
   void SoftwareSerial::timerInit(void) {
+      SWSerial_Timer.setPrescaleFactor(HAL_TIMER_RATE / SW_SERIAL_TIMER_RATE);
       SWSerial_Timer.attachCompare1Interrupt(SoftwareSerial::handle_interrupt);
   }
 
@@ -151,6 +152,7 @@ inline void SoftwareSerial::setTX() {
   // output high. Now, it is input with pullup for a short while, which
   // is fine. With inverse logic, either order is fine.
 
+  SWSerial_Fast_Write(_transmitPin, _inverse_logic ? LOW : HIGH);
   pinMode(_transmitPin, OUTPUT);
   SWSerial_Fast_Write(_transmitPin, _inverse_logic ? LOW : HIGH);
 }
@@ -312,7 +314,7 @@ void SoftwareSerial::begin(long speed) {
   else
     setTX();
 
-  listen();
+  //listen();
   //printf("hd %d active_in %d tx %d rx %d\n", _half_duplex, active_in, _receivePin, _transmitPin);
 }
 
