@@ -10,21 +10,24 @@
 	#include <Arduino.h>
 #endif
 
-#include <Stream.h>
-#include <SPI.h>
-
 #if (__cplusplus == 201703L) && defined(__has_include)
 	#define SW_CAPABLE_PLATFORM __has_include(<SoftwareSerial.h>)
 #else
-	#define SW_CAPABLE_PLATFORM defined(__AVR__) || defined(TARGET_LPC1768) || defined(ARDUINO_ARCH_STM32)
+	#define SW_CAPABLE_PLATFORM_SELF  defined(__AVR__) || defined(TARGET_LPC1768) || defined(ARDUINO_ARCH_STM32)
+	#define SW_CAPABLE_TMC_PROVIDES   defined(TARGET_STM32F1) || defined(TARGET_STM32F4)
+	#define SW_CAPABLE_PLATFORM  SW_CAPABLE_PLATFORM_SELF || SW_CAPABLE_TMC_PROVIDES
 #endif
 
-#if SW_CAPABLE_PLATFORM
+#include <Stream.h>
+#include <SPI.h>
+#if SW_CAPABLE_PLATFORM_SELF
 	#include <SoftwareSerial.h>
+#elif SW_CAPABLE_TMC_PROVIDES
+	#include "source/SW_UART.h"
 #endif
 
 #ifdef TMC_SERIAL_SWITCH
-	#include "source/SERIAL_SWITCH.h"
+#include "source/SERIAL_SWITCH.h"
 #endif
 
 #include "source/SW_SPI.h"
@@ -651,6 +654,7 @@ class TMC5130Stepper : public TMC2160Stepper {
 		INIT_REGISTER(VSTOP){.sr=0};
 		INIT_REGISTER(TZEROWAIT){.sr=0};
 		INIT_REGISTER(SW_MODE){{.sr=0}};
+		INIT_REGISTER(RAMP_STAT){{.sr=0}};
 		INIT_REGISTER(ENCMODE){{.sr=0}};
 		INIT_REGISTER(ENC_CONST){.sr=0};
 
@@ -1015,7 +1019,7 @@ class TMC2209Stepper : public TMC2208Stepper {
 
 		#if SW_CAPABLE_PLATFORM
 			TMC2209Stepper(uint16_t SW_RX_pin, uint16_t SW_TX_pin, float RS, uint8_t addr) :
-				TMC2208Stepper(SW_RX_pin, SW_TX_pin, RS, addr, SW_RX_pin != SW_TX_pin) {}
+				TMC2208Stepper(SW_RX_pin, SW_TX_pin, RS, addr, SW_RX_pin > -1) {}
 		#endif
 		void push();
 

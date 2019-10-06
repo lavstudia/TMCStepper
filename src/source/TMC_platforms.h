@@ -1,3 +1,4 @@
+//Software SPI
 #if defined(ARDUINO_ARCH_AVR) // 125kHz
   typedef volatile uint8_t* fastio_reg;
   typedef uint8_t fastio_bm;
@@ -36,4 +37,35 @@
   #define writeSCK_H digitalWrite(sck_pin, HIGH)
   #define writeSCK_L digitalWrite(sck_pin, LOW)
   #define readMISO digitalRead(miso_pin)
+#endif
+
+//Software Serial
+#if defined (TARGET_STM32F1)
+#include <libmaple/gpio.h>
+  #define SWSerial_Fast_Write(IO, V)     (PIN_MAP[IO].gpio_device->regs->BSRR = (1U << PIN_MAP[IO].gpio_bit) << ((V) ? 0 : 16))
+  #define SWSerial_Fast_Read(IO)         (PIN_MAP[IO].gpio_device->regs->IDR & (1U << PIN_MAP[IO].gpio_bit) ? HIGH : LOW)
+  
+  #ifndef HAL_TIMER_RATE
+    #define HAL_TIMER_RATE (72000000)
+  #endif
+  #define SW_SERIAL_TIMER_RATE 1000000 //1MHz
+
+  #define SWSerial_Timer Timer4
+#elif defined (TARGET_STM32F4)
+  #define SWSerial_Fast_Write(pin, level) digitalWrite(pin, level)
+  #define SWSerial_Fast_Read(pin)         digitalRead(pin)
+
+  #ifndef HAL_TIMER_RATE
+    #define HAL_TIMER_RATE (84000000)
+  #endif
+  #define SW_SERIAL_TIMER_RATE 1000000 //1MHz
+  #define SW_SERIAL_TIMER_NUM 4
+  
+  #define __SW_SERIAL_TIMER(X) TIM##X
+  #define _SW_SERIAL_TIMER(X) __SW_SERIAL_TIMER(X)
+  #define SW_SERIAL_TIMER _SW_SERIAL_TIMER(SW_SERIAL_TIMER_NUM)
+
+  #define __SW_SERIAL_TIMER_IRQ(X) TIM##X##_IRQn
+  #define _SW_SERIAL_TIMER_IRQ(X) __SW_SERIAL_TIMER_IRQ(X)
+  #define SW_SERIAL_TIMER_IRQ _SW_SERIAL_TIMER_IRQ(SW_SERIAL_TIMER_NUM)
 #endif
