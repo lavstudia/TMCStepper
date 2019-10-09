@@ -10,13 +10,10 @@
 	#include <Arduino.h>
 #endif
 
-#if (__cplusplus == 201703L) && defined(__has_include)
-	#define SW_CAPABLE_PLATFORM __has_include(<SoftwareSerial.h>)
-#else
-	#define SW_CAPABLE_PLATFORM_SELF  defined(__AVR__) || defined(TARGET_LPC1768) || defined(ARDUINO_ARCH_STM32)
-	#define SW_CAPABLE_TMC_PROVIDES   defined(TARGET_STM32F1) || defined(TARGET_STM32F4)
-	#define SW_CAPABLE_PLATFORM  SW_CAPABLE_PLATFORM_SELF || SW_CAPABLE_TMC_PROVIDES
-#endif
+#define SW_CAPABLE_PLATFORM_SELF  defined(__AVR__) || defined(TARGET_LPC1768) || defined(ARDUINO_ARCH_ESP32)
+#define SW_CAPABLE_TMC_PROVIDES   defined(TARGET_STM32F1) || defined(TARGET_STM32F4)
+
+#define SW_CAPABLE_PLATFORM  SW_CAPABLE_PLATFORM_SELF || SW_CAPABLE_TMC_PROVIDES
 
 #include <Stream.h>
 #include <SPI.h>
@@ -24,10 +21,6 @@
 	#include <SoftwareSerial.h>
 #elif SW_CAPABLE_TMC_PROVIDES
 	#include "source/SW_UART.h"
-#endif
-
-#ifdef TMC_SERIAL_SWITCH
-#include "source/SERIAL_SWITCH.h"
 #endif
 
 #include "source/SW_SPI.h"
@@ -52,7 +45,7 @@
 #define INIT2224_REGISTER(REG) TMC2224_n::REG##_t REG##_register = TMC2224_n::REG##_t
 #define SET_ALIAS(TYPE, DRIVER, NEW, ARG, OLD) TYPE (DRIVER::*NEW)(ARG) = &DRIVER::OLD
 
-#define TMCSTEPPER_VERSION 0x000501 // v0.5.1
+#define TMCSTEPPER_VERSION 0x000505 // v0.5.5
 
 class TMCStepper {
 	public:
@@ -142,9 +135,9 @@ class TMCStepper {
 
 class TMC2130Stepper : public TMCStepper {
 	public:
-		TMC2130Stepper(uint16_t pinCS, float RS = default_RS, int8_t link_index = -1);
-		TMC2130Stepper(uint16_t pinCS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK, int8_t link_index = -1);
-		TMC2130Stepper(uint16_t pinCS, float RS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK, int8_t link_index = -1);
+		TMC2130Stepper(uint16_t pinCS, float RS = default_RS);
+		TMC2130Stepper(uint16_t pinCS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK);
+		TMC2130Stepper(uint16_t pinCS, float RS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK);
 		void begin();
 		void defaults();
 		void setSPISpeed(uint32_t speed);
@@ -358,16 +351,13 @@ class TMC2130Stepper : public TMCStepper {
 		const uint16_t _pinCS;
 		SW_SPIClass * TMC_SW_SPI = NULL;
 		static constexpr float default_RS = 0.11;
-
-		int8_t link_index;
-		static int8_t chain_length;
 };
 
 class TMC2160Stepper : public TMC2130Stepper {
 	public:
-		TMC2160Stepper(uint16_t pinCS, float RS = default_RS, int8_t link_index = -1);
-		TMC2160Stepper(uint16_t pinCS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK, int8_t link_index = -1);
-		TMC2160Stepper(uint16_t pinCS, float RS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK, int8_t link_index = -1);
+		TMC2160Stepper(uint16_t pinCS, float RS = default_RS);
+		TMC2160Stepper(uint16_t pinCS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK);
+		TMC2160Stepper(uint16_t pinCS, float RS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK);
 		void begin();
 		void defaults();
 		void push();
@@ -464,9 +454,9 @@ class TMC2160Stepper : public TMC2130Stepper {
 
 class TMC5130Stepper : public TMC2160Stepper {
 	public:
-		TMC5130Stepper(uint16_t pinCS, float RS = default_RS, int8_t link_index = -1);
-		TMC5130Stepper(uint16_t pinCS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK, int8_t link_index = -1);
-		TMC5130Stepper(uint16_t pinCS, float RS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK, int8_t link_index = -1);
+		TMC5130Stepper(uint16_t pinCS, float RS = default_RS);
+		TMC5130Stepper(uint16_t pinCS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK);
+		TMC5130Stepper(uint16_t pinCS, float RS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK);
 
 		void begin();
 		void defaults();
@@ -619,8 +609,8 @@ class TMC5130Stepper : public TMC2160Stepper {
 		int32_t X_ENC();
 		void X_ENC(int32_t input);
 		// W: ENC_CONST
-		uint32_t ENC_CONST();
-		void ENC_CONST(uint32_t input);
+		uint16_t ENC_CONST();
+		void ENC_CONST(uint16_t input);
 		// R: ENC_STATUS
 		bool ENC_STATUS();
 		// R: ENC_LATCH
@@ -711,9 +701,9 @@ class TMC5130Stepper : public TMC2160Stepper {
 
 class TMC5160Stepper : public TMC5130Stepper {
 	public:
-		TMC5160Stepper(uint16_t pinCS, float RS = default_RS, int8_t link_index = -1);
-		TMC5160Stepper(uint16_t pinCS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK, int8_t link_index = -1);
-		TMC5160Stepper(uint16_t pinCS, float RS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK, int8_t link_index = -1);
+		TMC5160Stepper(uint16_t pinCS, float RS = default_RS);
+		TMC5160Stepper(uint16_t pinCS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK);
+		TMC5160Stepper(uint16_t pinCS, float RS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK);
 
 		void rms_current(uint16_t mA) { TMC2160Stepper::rms_current(mA); }
 		void rms_current(uint16_t mA, float mult) { TMC2160Stepper::rms_current(mA, mult); }
@@ -805,19 +795,16 @@ class TMC5160Stepper : public TMC5130Stepper {
 
 class TMC5161Stepper : public TMC5160Stepper {
 	public:
-    TMC5161Stepper(uint16_t pinCS, float RS = default_RS, int8_t link_index = -1) : TMC5160Stepper(pinCS, RS, link_index) {}
-		TMC5161Stepper(uint16_t pinCS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK, int8_t link_index = -1) :
-			TMC5160Stepper(pinCS, pinMOSI, pinMISO, pinSCK, link_index) {}
-		TMC5161Stepper(uint16_t pinCS, float RS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK, int8_t link_index = -1) :
-			TMC5160Stepper(pinCS, RS, pinMOSI, pinMISO, pinSCK, link_index) {}
+		TMC5161Stepper(uint16_t pinCS, float RS = default_RS) : TMC5160Stepper(pinCS, RS) {}
+		TMC5161Stepper(uint16_t pinCS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK) :
+			TMC5160Stepper(pinCS, pinMOSI, pinMISO, pinSCK) {}
+		TMC5161Stepper(uint16_t pinCS, float RS, uint16_t pinMOSI, uint16_t pinMISO, uint16_t pinSCK) :
+			TMC5160Stepper(pinCS, RS, pinMOSI, pinMISO, pinSCK) {}
 };
 
 class TMC2208Stepper : public TMCStepper {
 	public:
-	  #ifdef TMC_SERIAL_SWITCH
-	    TMC2208Stepper(Stream * SerialPort, float RS, uint8_t addr, uint16_t mul_pin1, uint16_t mul_pin2);
-	  #endif
-		TMC2208Stepper(Stream * SerialPort, float RS, bool) :
+		TMC2208Stepper(Stream * SerialPort, float RS, bool has_rx=true) :
 			TMC2208Stepper(SerialPort, RS, TMC2208_SLAVE_ADDR)
 			{}
 		#if SW_CAPABLE_PLATFORM
@@ -828,9 +815,7 @@ class TMC2208Stepper : public TMCStepper {
 		void defaults();
 		void push();
 		void begin();
-		#if SW_CAPABLE_PLATFORM
 		void beginSerial(uint32_t baudrate);
-		#endif
 		bool isEnabled();
 
 		// RW: GCONF
@@ -992,10 +977,6 @@ class TMC2208Stepper : public TMCStepper {
 		#if SW_CAPABLE_PLATFORM
 			SoftwareSerial * SWSerial = NULL;
 		#endif
-
-		#ifdef TMC_SERIAL_SWITCH
-      	    SSwitch *sswitch = NULL;
-    	#endif
 
 		void write(uint8_t, uint32_t);
 		uint32_t read(uint8_t);
